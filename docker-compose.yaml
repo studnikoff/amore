@@ -1,0 +1,23 @@
+version: '2.1'
+services:
+  amore:
+    build: .
+    # restart: 'always'
+    env_file:
+      - postgres_config.env
+    links:
+      - db
+    depends_on:
+      db:
+        condition: service_healthy
+    command: pytest tests
+
+  db:
+    image: postgres:latest
+    env_file:
+      - postgres_config.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
