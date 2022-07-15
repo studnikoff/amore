@@ -1,6 +1,8 @@
+from email.policy import default
 import os, sys
+from sqlite3 import Date
 import logging
-from typing import Type
+from typing import Type, Any
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy import create_engine
@@ -78,6 +80,9 @@ class Compliment(Base):
 
         if 'author' not in kwargs.keys():
             self.author = 'DS'
+            
+        if 'used' not in kwargs.keys():
+            self.used = False
 
         self.__verify()
 
@@ -114,7 +119,26 @@ class Compliment(Base):
         bool_attr = ["used"]
         list_verify(bool_attr, bool)
 
-        
+
+class Chat(Base):
+    __tablename__ = 'chats'
+
+    chat_id = Column(Integer, nullable=False, primary_key=True)
+    first_name = Column(String)
+    last_name = Column(String)
+    username = Column(String)
+    valid_from_dttm = Column(
+        DateTime, 
+        nullable=False,
+        default=datetime.utcnow
+    )
+    valid_to_dttm = Column(
+        DateTime, 
+        nullable=False,
+        default=datetime(5999,1,1,0,0,0,0)
+    )
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
 
 Base.metadata.create_all(bind=engine)
 
@@ -154,6 +178,7 @@ def search_compliment() -> Type[Compliment]:
     pass
 
 def edit_compliment(id: int, changes: dict) -> None:
+
     cmpl = session.get(Compliment, id)
     print(cmpl)
     for key in changes.keys():
@@ -163,3 +188,46 @@ def edit_compliment(id: int, changes: dict) -> None:
         else:
             raise AttributeError(f"Compliment {cmpl} does not have attribute {key}")
     session.commit()
+
+    
+def get_chats():
+    res = list()
+    stmt = session.query(Chat).\
+                     filter_by(valid_to_dttm=datetime(5999,1,1,0,0,0,0))
+    for i in stmt:
+        res.append(i.chat_id)
+    return res
+
+def check_chat_existence(chat: Type[Chat]):
+    stmt = session.query(Chat).\
+           filter_by(username=chat.username).\
+           all()
+
+    if len(stmt) == 0:
+        return False
+    else:
+        return True
+
+def save_chat(chat: Type[Chat]):
+    if isinstance(chat, Chat):
+        if check_chat_existence(chat):
+            q = session.query(Chat).\
+                filter(
+                    Chat.username==chat.username, 
+                    Chat.valid_to_dttm >= datetime.utcnow()
+                )
+            for i in q:
+                i.valid_to_dttm = datetime.utcnow()
+            try:
+                session.commit()
+            except:
+                session.rollback()
+                raise
+
+        try:
+            session.add(chat)
+            session.commit()
+        except:
+            session.rollback()
+    else:
+        raise

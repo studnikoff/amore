@@ -11,6 +11,10 @@ services:
       db:
         condition: service_healthy
     command: pytest tests
+    volumes:
+      - amore_db:/usr/app/data
+    ports:
+      - "5432:5432"
 
   db:
     image: postgres:latest
@@ -21,3 +25,5 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+volumes:
+  amore_db:

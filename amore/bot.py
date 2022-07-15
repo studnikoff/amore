@@ -1,44 +1,91 @@
+from ast import Call
 import requests as req
 import socket
 import emoji
-import telegram
+import logging
+import schedule
+from time import sleep
+from telegram import Update, Bot
+from telegram.ext import Updater, Filters
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler
 
+from amore.generator import Generator
+from amore.compliments_db import Chat, get_chats, save_chat, check_chat_existence
+import amore.utility as util
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='[%(asctime)s]  %(name)s  %(levelname)s: %(message)s',
+                    filename='data/amore.log')
 
 TOKEN = '5135529791:AAH-fYwE0F467F2oUOdcoRbtHk2bN8Idrz0'
 URL = 'https://api.telegram.org/bot{token}/{method}'
 
-class Server():
-    def __init__(self) -> None:
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind(('', 1666))
+updater = Updater(token=TOKEN, use_context=True)
+dispatcher = updater.dispatcher
 
-    def get_addr(self) -> None:
-        self.connection, _ = self.socket.accept()
+
+def message_for_her():
+    bot = Bot(TOKEN)
+    gen = Generator(scale=0.3)
+    try:
+        cmpl = gen.choose_compliment()
+    except IndexError as e:
+        raise IndexError("Fill database with compliments".upper())
+    if cmpl.rarity == 1:
+        text = f'Обычный комплимент\n{util.SUN*5}\n{cmpl.value}'
+    elif cmpl.rarity == 2:
+        text = f'Необычный комплимент\n{util.HEART*5}\n{cmpl.value}'
+    elif cmpl.rarity == 3:
+        text = f'Редкий комплимент\n{util.GEM*5}\n{cmpl.value}'
+    elif cmpl.rarity == 4:
+        text = f'Вероятность этого комплимента буквально 0 -__-\n{util.RING*5}\n{cmpl.value}'
+
+    msg = emoji.emojize(text, language='alias')
+
+    chat_ids = get_chats()
+    for chat_id in chat_ids:
+        bot.send_message(chat_id=chat_id, text=msg)
+
+def start(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    print(update, type(update))
+    logging.debug(f'{update}, {type(update)}')
+    chat = update.message.chat.to_dict()
+    chat.pop('type')
+    chat['chat_id'] = chat.pop('id')
+    chat = Chat(**chat)
+    save_chat(chat)
     
-    def send_message(self, msg: str) -> None:
-
-        params = {
-            'chat_id':133926322,
-            'text': msg
-        }
-        bot = telegram.Bot(token=TOKEN)
-        print(f'Message configuration: {params}')
-        bot.send_message(params['chat_id'], emoji.emojize(params['text'], language='alias'))
-
-    def run(self) -> None:
-        self.socket.listen()
-        while True:
-            self.get_addr()
-            with self.connection as con:
-                msg = con.recv(1024)
-                print(f'Raw mwg:\n{msg}')
-                msg = msg.decode('utf-8')
-                print(msg)
-                self.send_message(msg)
+    text = emoji.emojize("Мммм, да это же самая красивая девушка на свете пишет :heart:",
+                         language='alias')
+    context.bot.send_message(chat_id=chat.chat_id, 
+                             text=text)
+    
+    logging.debug("Set schedule")
+    schedule.every().day.at("07:00").do(message_for_her)
+    while True:
+        schedule.run_pending()
+        sleep(1)
 
 
+
+
+def send_answer(update: Update, context: CallbackContext):
+    text = "К сожалению, я пока ещё не умею отвечать :cry: \nНо в будущем возможно научусь! :smile:"
+    context.bot.send_message(chat_id=update.effective_chat.id, 
+                             text=emoji.emojize(text, language='alias'))
+
+def start_bot():
+    start_handler = CommandHandler('start', start)
+    dispatcher.add_handler(start_handler)
+
+    send_answer_handler = MessageHandler(Filters.text & (~Filters.command), send_answer)
+    dispatcher.add_handler(send_answer_handler)
+
+    updater.start_polling()
 
 if __name__ == '__main__':
+    start_bot()
     # url_req = url.format(token=TOKEN, method='sendMessage')
     # print(url_req)
 
@@ -53,8 +100,5 @@ if __name__ == '__main__':
 
     # bot = telegram.Bot(token=TOKEN)
     # print(bot.get_me())
-    server = Server()
-    print('Server starting...')
-    server.run()
 
     

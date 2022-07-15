@@ -1,0 +1,12 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "compliments",
+            "group": "amore",
+            "database": "${workspaceFolder:amore}/data/compliments.db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
