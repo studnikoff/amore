@@ -2,7 +2,6 @@ version: '2.1'
 services:
   amore:
     build: .
-    # restart: 'always'
     env_file:
       - postgres_config.env
     links:
