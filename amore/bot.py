@@ -1,10 +1,6 @@
-from ast import Call
-import requests as req
-import socket
 import emoji
 import logging
-import schedule
-from time import sleep
+import datetime
 from telegram import Update, Bot
 from telegram.ext import Updater, Filters
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler
@@ -24,14 +20,19 @@ updater = Updater(token=TOKEN, use_context=True)
 dispatcher = updater.dispatcher
 
 
-def message_for_her():
+def message_for_her(*args, **kwargs):
     bot = Bot(TOKEN)
     gen = Generator(scale=0.3)
     try:
         cmpl = gen.choose_compliment()
     except IndexError as e:
-        raise IndexError("Fill database with compliments".upper())
-    if cmpl.rarity == 1:
+        cmpl = None
+        text = "Просто не существует слов, чтобы описать тебя (база данных пустая просто) :heart:"
+        logging.exception("Fill database with compliments".upper())
+    
+    if cmpl is None:
+        pass
+    elif cmpl.rarity == 1:
         text = f'Обычный комплимент\n{util.SUN*5}\n{cmpl.value}'
     elif cmpl.rarity == 2:
         text = f'Необычный комплимент\n{util.HEART*5}\n{cmpl.value}'
@@ -48,8 +49,9 @@ def message_for_her():
 
 def start(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
-    print(update, type(update))
-    logging.debug(f'{update}, {type(update)}')
+    logging.debug(f'Update: {update}, {type(update)}')
+    logging.debug(f'Context: {context}, {type(context)}')
+
     chat = update.message.chat.to_dict()
     chat.pop('type')
     chat['chat_id'] = chat.pop('id')
@@ -62,10 +64,9 @@ def start(update: Update, context: CallbackContext):
                              text=text)
     
     logging.debug("Set schedule")
-    schedule.every().day.at("07:00").do(message_for_her)
-    while True:
-        schedule.run_pending()
-        sleep(1)
+
+    # Moscow: UTC+3:00, TODO: tzinfo
+    context.job_queue.run_daily(message_for_her, datetime.time(4, 0, 0, tzinfo=None)) # Time in UTC
 
 
 
@@ -76,6 +77,7 @@ def send_answer(update: Update, context: CallbackContext):
                              text=emoji.emojize(text, language='alias'))
 
 def start_bot():
+    logging.info("Bot start")
     start_handler = CommandHandler('start', start)
     dispatcher.add_handler(start_handler)
 

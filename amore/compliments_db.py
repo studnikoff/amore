@@ -39,15 +39,17 @@ def get_environ(key: str, default_value: str) -> str:
 
 # Database configuration
 db = get_environ('AMORE_DB', 'sqlite')
+logging.debug(f"Connection to database: {db}")
+
 if db == 'sqlite':
     # Windows sqlite
-    engine = create_engine(f'sqlite:///data/compliments.db', echo=True)
+    engine = create_engine(f'sqlite:///data/compliments.db?check_same_thread=False', echo=True)
 elif db == 'postgres':
     user = get_environ('POSTGRES_USER', 'postgres')
     password = get_environ('POSTGRES_PASSWORD', '1343')
     hostname = get_environ('POSTGRES_ADDR', 'localhost')
     port = get_environ('POSTGRES_PORT', '5432')
-    dbname = get_environ('POSTGRES_DB', 'db')
+    dbname = get_environ('POSTGRES_DB', f'{user}')
     engine = create_engine(f'postgresql://{user}:{password}@{hostname}:{port}/{dbname}', echo=True)
 
 
@@ -141,6 +143,7 @@ class Chat(Base):
         super().__init__(*args, **kwargs)
 
 Base.metadata.create_all(bind=engine)
+session.commit()
 
 def add_compliment(value: str, rarity: int, **kwargs):
     """Adding compliment into database
@@ -210,7 +213,7 @@ def check_chat_existence(chat: Type[Chat]):
 
 def save_chat(chat: Type[Chat]):
     if isinstance(chat, Chat):
-        if check_chat_existence(chat):
+        if check_chat_existence(chat) and session.get(Chat, chat.chat_id) is None:
             q = session.query(Chat).\
                 filter(
                     Chat.username==chat.username, 

@@ -6,6 +6,16 @@
             "name": "compliments",
             "group": "amore",
             "database": "${workspaceFolder:amore}/data/compliments.db"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "amore_test",
+            "database": "postgres",
+            "username": "ds",
+            "password": "1343"
         }
     ],
     "sqltools.useNodeRuntime": true
