@@ -27,11 +27,11 @@ def message_for_her(*args, **kwargs):
         cmpl = gen.choose_compliment()
     except IndexError as e:
         cmpl = None
-        text = "Просто не существует слов, чтобы описать тебя (база данных пустая просто) :heart:"
+        text = "Просто не существует слов, чтобы описать тебя (ошибка или бд пустая) :heart:"
         logging.exception("Fill database with compliments".upper())
     
     if cmpl is None:
-        pass
+        text = "Просто не существует слов, чтобы описать тебя (база данных пустая просто) :heart:"
     elif cmpl.rarity == 1:
         text = f'Обычный комплимент\n{util.SUN*5}\n{cmpl.value}'
     elif cmpl.rarity == 2:
