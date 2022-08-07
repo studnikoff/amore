@@ -25,11 +25,10 @@ def message_for_her(*args, **kwargs):
     gen = Generator(scale=0.3)
     try:
         cmpl = gen.choose_compliment()
-    except IndexError as e:
+    except:
         cmpl = None
         text = "Просто не существует слов, чтобы описать тебя (ошибка или бд пустая) :heart:"
         logging.exception("Fill database with compliments".upper())
-    
     if cmpl is None:
         text = "Просто не существует слов, чтобы описать тебя (база данных пустая просто) :heart:"
     elif cmpl.rarity == 1:

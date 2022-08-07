@@ -26,6 +26,22 @@ services:
       - amore_db:/var/lib/postgresql/data
     ports:
       - 5432:5432
+
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: cfkfl1245@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: AeIsFrAe1999#amore
+      PGADMIN_LISTEN_PORT: 80
+      # PGADMIN_CONFIG_DEFAULT_SERVER: "0.0.0.0"
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
 volumes:
   amore_db:
   amore_log:
+  pgadmin-data:

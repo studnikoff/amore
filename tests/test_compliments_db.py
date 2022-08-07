@@ -90,4 +90,5 @@ def test_edit_compliment(record1):
 
     res = session.get(Compliment, cmpl1.id)
 
+    session.query(Compliment).delete()
     assert res.value == 'test_edit_compliment'
