@@ -39,7 +39,7 @@ def message_for_her(*args, **kwargs):
     if cmpl is None:
         text = "Просто не существует слов, чтобы описать тебя (база данных пустая просто) :heart:"
     elif cmpl.rarity == 1:
-        text = f'Обычный комплимент\n{util.SUN*5}\n{cmpl.value}'
+        text = f'Утренний комплимент\n{util.SUN*5}\n{cmpl.value}'
     elif cmpl.rarity == 2:
         text = f'Необычный комплимент\n{util.HEART*5}\n{cmpl.value}'
     elif cmpl.rarity == 3:
