@@ -4,6 +4,7 @@ import datetime
 from telegram import Update, Bot
 from telegram.ext import Updater, Filters
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler
+from telegram.error import Unauthorized
 
 from amore.generator import Generator
 from amore.compliments_db import Chat, get_chats, save_chat, check_chat_existence
@@ -49,7 +50,10 @@ def message_for_her(*args, **kwargs):
     msg = emoji.emojize(text, language='alias')
 
     for chat_id in chat_ids:
-        bot.send_message(chat_id=chat_id, text=msg)
+        try:
+            bot.send_message(chat_id=chat_id, text=msg)
+        except Unauthorized:
+            logging.exception(f"Bot has been blocked by {chat_id}")
 
 def start(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
@@ -81,6 +85,7 @@ def send_answer(update: Update, context: CallbackContext):
 
 def start_bot():
     logging.info("Bot start")
+
     logging.info("start handler")
     start_handler = CommandHandler('start', start)
     dispatcher.add_handler(start_handler)
@@ -89,6 +94,11 @@ def start_bot():
     chats_stat_handler = CommandHandler('chats_stat', chats_stat)
     dispatcher.add_handler(chats_stat_handler)
 
+    logging.info("force_send_message handler")
+    force_send_message = CommandHandler('force_send_message', message_for_her)
+    dispatcher.add_handler(force_send_message)
+
+    logging.info("answer handler")
     send_answer_handler = MessageHandler(Filters.text & (~Filters.command), send_answer)
     dispatcher.add_handler(send_answer_handler)
 
@@ -98,22 +108,5 @@ def start_bot():
     job.run_daily(message_for_her, datetime.time(4, 0, 0, tzinfo=None)) # Time in UTC
 
     updater.start_polling()
-
-if __name__ == '__main__':
-    start_bot()
-    # url_req = url.format(token=TOKEN, method='sendMessage')
-    # print(url_req)
-
-
-    # msg = str(input())
-    # params = {
-    #     'chat_id':133926322,
-    #     'text': msg
-    # }
-    # response = req.get(url_req, params=params)
-    # print(response.content)
-
-    # bot = telegram.Bot(token=TOKEN)
-    # print(bot.get_me())
 
     
